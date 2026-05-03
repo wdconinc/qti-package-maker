@@ -1,4 +1,4 @@
-# CALC item type — Architecture Decision Record
+# CALC item type - Architecture Decision Record
 
 This document records the design decisions behind the `CALC` (arithmetic /
 formula) question type.  It is kept in the repository so that upstream
@@ -40,7 +40,7 @@ CALC(question_text, variables, formula, tolerance_pct=5.0)
 | `question_text` | str | Question text with `[varname]` placeholders |
 | `variables` | dict | `{varname: {"min": float, "max": float, "decimal_places": int}}` |
 | `formula` | str | Python/JS arithmetic expression using bare variable names |
-| `tolerance_pct` | float | Percentage tolerance, `0 < pct ≤ 100` (default `5.0`) |
+| `tolerance_pct` | float | Percentage tolerance, `0 < pct <= 100` (default `5.0`) |
 
 ### Example
 
@@ -62,14 +62,14 @@ item = item_types.CALC(
 
 ## 3. Design decisions
 
-### 3.1 Placeholder syntax — `[varname]`
+### 3.1 Placeholder syntax - `[varname]`
 
 Square brackets are chosen for consistency with the `MULTI_FIB` type (which
 also uses `[key]` tokens) and with Canvas's own variable syntax.  Any
 identifier that appears inside `[...]` in the question text must be declared in
 the `variables` dict.
 
-### 3.2 Formula syntax — bare identifier expressions
+### 3.2 Formula syntax - bare identifier expressions
 
 The formula uses bare Python/JS identifier names (e.g. `v * t`) without
 bracket delimiters.  This allows the formula to be evaluated directly:

@@ -1,4 +1,5 @@
 # Standard Library
+import math as _math
 #import html
 #import random
 
@@ -366,7 +367,6 @@ def create_CALC_item_proc_extension(variables: dict, formula: str, tolerance_pct
 
 	# Var sets - generate deterministically
 	var_sets_el = lxml.etree.SubElement(calculated, "var_sets")
-	import math as _math
 	for i in range(num_var_sets):
 		# fraction in [0, 1] evenly spaced across i = 0..num_var_sets-1
 		frac = i / max(num_var_sets - 1, 1)

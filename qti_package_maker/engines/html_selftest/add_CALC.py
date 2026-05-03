@@ -1,3 +1,6 @@
+# Standard Library
+import json
+
 # Local libraries
 from qti_package_maker.common import string_functions
 from qti_package_maker.engines.html_selftest import html_functions
@@ -12,7 +15,7 @@ def generate_core_html(crc16_text: str, question_text: str, variables: dict) -> 
 	back into a display copy of the question each time the page loads.
 	"""
 	html_content = f"<div id=\"question_html_{crc16_text}\">\n"
-	# Question statement — placeholder text is filled by JS at load time
+	# Question statement - placeholder text is filled by JS at load time
 	html_content += html_functions.format_question_text(crc16_text, question_text)
 	html_content += "<div>\n"
 	html_content += (
@@ -39,7 +42,7 @@ def generate_javascript(crc16_text: str, variables: dict,
 	   using percentage tolerance.
 
 	Security: the formula is evaluated via `new Function(...)` with variable
-	values injected as named arguments — student input is never eval()'d.
+	values injected as named arguments - student input is never eval()'d.
 	"""
 	sorted_vars = sorted(variables.items())
 	var_names_js = ', '.join(f'"{name}"' for name, _ in sorted_vars)
@@ -64,9 +67,10 @@ def generate_javascript(crc16_text: str, variables: dict,
 	js += "    return Math.round(val * factor) / factor;\n"
 	js += "  }\n"
 	js += "\n"
-	# Formula function — injected as a named-argument Function, never eval'd on user input
-	arg_list_str = ', '.join(name for name, _ in sorted_vars)
-	js += f"  var calcFormula_{crc16_text} = new Function({var_names_js}, 'return ({formula});');\n"
+	# Formula function - injected as a named-argument Function, never eval'd on user input.
+	# The formula is JSON-encoded to safely embed it into the JS string literal.
+	formula_js = json.dumps(formula)
+	js += f"  var calcFormula_{crc16_text} = new Function({var_names_js}, 'return (' + {formula_js} + ')');\n"
 	js += "\n"
 	# Randomise on load
 	js += f"  function initCalc_{crc16_text}() {{\n"

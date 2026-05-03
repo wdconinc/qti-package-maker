@@ -221,8 +221,9 @@ def validate_ORDER(question_text: str,  ordered_answers_list: list):
 #========================================================
 # Allowlist for CALC formula characters:
 # alphanumeric identifiers, common arithmetic operators, whitespace, parentheses,
-# dots (decimals), commas (function args), and the power operator **
-_FORMULA_ALLOWLIST_RE = re.compile(r'^[A-Za-z0-9_\s\+\-\*/\.\,\(\)\%\^]+$')
+# dots (decimals), commas (function args), and the power operator **.
+# Note: ^ is intentionally excluded - Python uses ** for exponentiation; ^ is bitwise XOR.
+_FORMULA_ALLOWLIST_RE = re.compile(r'^[A-Za-z0-9_\s\+\-\*/\.\,\(\)\%]+$')
 
 # Math function names available in the safe formula namespace
 _SAFE_MATH_NAMES = {name for name in dir(math) if not name.startswith('_')}
@@ -289,7 +290,11 @@ def validate_CALC(question_text: str, variables: dict, formula: str, tolerance_p
 	if not isinstance(tolerance_pct, (int, float)) or not (0 < tolerance_pct <= 100):
 		raise ValueError("'tolerance_pct' must be a number in the range (0, 100].")
 
-	# Trial evaluation: substitute min values and evaluate
+	# Trial evaluation: substitute min values and evaluate.
+	# eval() is required here because the formula may reference math functions
+	# (e.g. sqrt, sin) which ast.literal_eval cannot handle.  Security is
+	# enforced by: (1) the allowlist regex above, (2) the forbidden-token check,
+	# and (3) passing {"__builtins__": {}} to suppress all built-ins.
 	safe_namespace = {name: getattr(math, name) for name in _SAFE_MATH_NAMES}
 	for varname, spec in variables.items():
 		safe_namespace[varname] = float(spec['min'])
