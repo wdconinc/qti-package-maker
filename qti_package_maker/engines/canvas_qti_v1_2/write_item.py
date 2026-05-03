@@ -141,3 +141,27 @@ def ORDER(item_cls):
 	#item_number: int, crc16_text: str, question_text: str, ordered_answers_list: list):
 	"""Canvas QTI 1.2 writer does not implement ORDER items."""
 	raise NotImplementedError
+
+#==============================================================
+def CALC(item_cls):
+	"""Render a CALC item as Canvas QTI 1.2 XML (calculated_question)."""
+	assessment_item_etree = lxml.etree.Element("item",
+		ident=f"calculated_{item_cls.item_number:03d}", title=item_cls.item_crc16)
+	itemmetadata = item_xml_helpers.create_itemmetadata([], 'calculated_question')
+	presentation_etree = item_xml_helpers.create_numeric_presentation(item_cls.question_text)
+	resprocessing_etree = lxml.etree.Element("resprocessing")
+	outcomes = lxml.etree.SubElement(resprocessing_etree, "outcomes")
+	lxml.etree.SubElement(outcomes, "decvar",
+		maxvalue="100", minvalue="0", varname="SCORE", vartype="Decimal")
+	respcondition = lxml.etree.SubElement(resprocessing_etree, "respcondition",
+		**{"continue": "No"})
+	conditionvar = lxml.etree.SubElement(respcondition, "conditionvar")
+	lxml.etree.SubElement(conditionvar, "other")
+	lxml.etree.SubElement(respcondition, "setvar", action="Set", varname="SCORE").text = "100"
+	itemproc_extension = item_xml_helpers.create_CALC_item_proc_extension(
+		item_cls.variables, item_cls.formula, item_cls.tolerance_pct)
+	assessment_item_etree.append(itemmetadata)
+	assessment_item_etree.append(presentation_etree)
+	assessment_item_etree.append(resprocessing_etree)
+	assessment_item_etree.append(itemproc_extension)
+	return assessment_item_etree

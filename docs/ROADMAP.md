@@ -14,6 +14,8 @@ Priorities organized by time horizon. Dates are directional, not commitments.
 - Centralized warnings helper with consistent formatting and test coverage.
 - Ensure HTML validation fails clearly when lxml is missing.
 - Keep engine capability tables in sync with the registry.
+- Blackboard QTI 2.1 CALC writer: map to Blackboard's proprietary calculated-question
+  extension once a reference export sample is available.
 
 ## Mid term (3-9 months)
 - Hints and feedback data model: hints list, correct/incorrect feedback, choice feedback.

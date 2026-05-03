@@ -1,6 +1,42 @@
 # Changelog
 
-## 2026-04-14
+## 2026-05-03
+
+### Additions and New Features
+- Add `CALC` item type: arithmetic / formula questions where variable placeholders
+  (`[varname]` syntax) are randomised each attempt and a formula string determines the
+  expected answer.  Supported in `canvas_qti_v1_2` (Canvas `calculated_question`),
+  `bbq_text_upload` (Blackboard `FIL`), `html_selftest` (JS `new Function` formula
+  evaluator with percentage-tolerance check), and `human_readable` (labelled text block).
+  Blackboard QTI 2.1 engines (`blackboard_qti_v2_1`, `bb_ultra_qti_v2_1`) return `None`
+  (item silently skipped) pending a proprietary extension reference sample.
+- Add `validate_CALC` in `qti_package_maker/assessment_items/validator.py` covering
+  variable spec checks (min < max, non-negative decimal_places), placeholder presence in
+  question text, formula allowlist (alphanumerics, arithmetic operators, math function
+  names), forbidden-token rejection (`import`, `eval`, `exec`, `__`), tolerance range
+  (0 < pct <= 100), and a trial evaluation with min variable values.
+- Add `qti_package_maker/engines/html_selftest/add_CALC.py` with scoped JS that randomises
+  variable values on `DOMContentLoaded`, substitutes them into the displayed question text,
+  and evaluates the formula via `new Function` on Check Answer.
+- Add `qti_package_maker/engines/canvas_qti_v1_2/item_xml_helpers.py`
+  `create_CALC_item_proc_extension` helper that builds the `<itemproc_extension><calculated>`
+  block with deterministic var-sets (10 evenly spaced draws).
+- Add `docs/CALC_DESIGN.md`: architecture decision record covering data model, formula
+  security, CRC derivation, engine mapping, and open questions.
+- Update `docs/QUESTION_TYPES.md`, `docs/ENGINES.md`, and `docs/ROADMAP.md` to document
+  the new CALC type.
+- Add unit tests: `test_validate_calc_*` (8 cases in `tests/unit/test_validator.py`),
+  `test_qti12_calc_item_structure` (Canvas XML structural check), BBQ `FIL` format test,
+  and HTML selftest JS presence test; extend `test_html_selftest_outputs_are_valid_html`
+  to cover CALC.
+
+### Fixes and Maintenance
+- Fix `qti_package_maker/engines/blackboard_qti_v2_1/engine_class.py` `save_package` to
+  return `None` early when all items in the bank produce no output (empty
+  `assessment_file_name_list`), preventing a spurious `ValueError` when a bank contains
+  only unsupported item types for that engine.
+
+
 
 ### Additions and New Features
 - Add `docs/BLACKBOARD_ULTRA_NOTES.md`, the empirical contract for what Blackboard Ultra accepts, rewrites, and destroys on QTI 2.1 import/export. Derived from one manual round trip of `output/ultra_probe.zip` through an Ultra sandbox; re-export preserved in [ULTRA/ultra_probe-roundtrip/](../ULTRA/ultra_probe-roundtrip/).

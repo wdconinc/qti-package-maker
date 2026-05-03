@@ -164,6 +164,8 @@ class EngineClass(base_engine.BaseEngine):
 		os.makedirs(self.output_dir, exist_ok=True)
 		os.makedirs(self.assessment_dir, exist_ok=True)
 		assessment_file_name_list = self.write_assessment_items(item_bank)
+		if not assessment_file_name_list:
+			return None
 		self.write_assessment_meta(assessment_file_name_list)
 		self.write_manifest(assessment_file_name_list)
 

@@ -94,3 +94,33 @@ def test_qti21_zip_layout_and_manifest(tmp_path, monkeypatch):
 		assert _find_first_by_local_name(item_root, "responseDeclaration") is not None
 		assert _find_first_by_local_name(item_root, "itemBody") is not None
 		assert _find_first_by_local_name(item_root, "responseProcessing") is not None
+
+
+def test_qti12_calc_item_structure(tmp_path, monkeypatch):
+	"""Canvas QTI 1.2 CALC item must contain calculated_question metadata and a
+	<calculated> extension block with <formulas>, <vars>, and <var_sets>."""
+	monkeypatch.chdir(tmp_path)
+	bank = ItemBank(allow_mixed=True)
+	bank.add_item("CALC", (
+		"A car travels [v] m/s for [t] s. Find the distance.",
+		{"v": {"min": 1.0, "max": 50.0, "decimal_places": 1},
+			"t": {"min": 1.0, "max": 10.0, "decimal_places": 0}},
+		"v * t",
+		5.0,
+	))
+	engine = qti12_engine.EngineClass("sample", verbose=False)
+	outfile = tmp_path / "calc_test.zip"
+	engine.save_package(bank, outfile=str(outfile))
+
+	with zipfile.ZipFile(outfile, "r") as zipf:
+		xml_files = [n for n in zipf.namelist() if n.endswith(".xml") and "questions" in n]
+		assert xml_files
+		items_bytes = zipf.read(xml_files[0])
+		items_text = items_bytes.decode("utf-8")
+
+	assert "calculated_question" in items_text
+	root = _parse_xml_bytes(items_bytes)
+	assert _find_first_by_local_name(root, "calculated") is not None
+	assert _find_first_by_local_name(root, "formulas") is not None
+	assert _find_first_by_local_name(root, "vars") is not None
+	assert _find_first_by_local_name(root, "var_sets") is not None

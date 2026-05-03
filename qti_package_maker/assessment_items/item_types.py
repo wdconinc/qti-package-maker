@@ -232,3 +232,42 @@ class ORDER(BaseItem):
 	#================
 	def get_supporting_field_names(self) -> tuple:
 		return ("ordered_answers_list",)
+
+#============================================
+class CALC(BaseItem):
+	"""
+	Arithmetic / calculated question.
+
+	The question text contains named variable placeholders in [varname] syntax.
+	Each attempt the LMS (or the HTML selftest JavaScript) draws random values
+	for every variable from the declared ranges, evaluates the formula, and
+	checks whether the student answer is within tolerance_pct percent of the
+	expected result.
+
+	Fields:
+		variables   dict mapping each variable name to
+		            {"min": float, "max": float, "decimal_places": int}
+		formula     Python/JS arithmetic expression using bare variable names,
+		            e.g. "v * t"
+		tolerance_pct  percentage tolerance (0 < pct <= 100), default 5.0
+	"""
+	def __init__(
+		self,
+		question_text: str,
+		variables: dict,
+		formula: str,
+		tolerance_pct: float = 5.0,
+	):
+		self.variables = variables
+		self.formula = formula
+		self.tolerance_pct = tolerance_pct
+		# CRC derived from formula and sorted variable definitions
+		secondary_string = formula + "|" + "|".join(
+			f"{k}:{v['min']:.6g}:{v['max']:.6g}:{v['decimal_places']}"
+			for k, v in sorted(variables.items())
+		)
+		self.secondary_crc16 = string_functions.get_crc16_from_string(secondary_string)
+		super().__init__(question_text)
+	#================
+	def get_supporting_field_names(self) -> tuple:
+		return ("variables", "formula", "tolerance_pct")

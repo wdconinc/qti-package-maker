@@ -22,10 +22,12 @@ def _build_item(item_type: str, item_tuple):
 		return qti_package_maker.assessment_items.item_types.MULTI_FIB(*item_tuple)
 	if item_type == "ORDER":
 		return qti_package_maker.assessment_items.item_types.ORDER(*item_tuple)
+	if item_type == "CALC":
+		return qti_package_maker.assessment_items.item_types.CALC(*item_tuple)
 	raise ValueError(f"Unsupported item type: {item_type}")
 
 
-@pytest.mark.parametrize("item_type", ["MC", "MA", "MATCH", "NUM", "FIB", "MULTI_FIB", "ORDER"])
+@pytest.mark.parametrize("item_type", ["MC", "MA", "MATCH", "NUM", "FIB", "MULTI_FIB", "ORDER", "CALC"])
 def test_html_selftest_outputs_are_valid_html(sample_items, item_type):
 	item_cls = _build_item(item_type, sample_items[item_type])
 	html_text = getattr(qti_package_maker.engines.html_selftest.write_item, item_type)(item_cls)

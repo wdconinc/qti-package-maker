@@ -97,3 +97,58 @@ def test_validate_match_accepts_valid():
 
 def test_validate_order_accepts_valid():
 	assert validator.validate_ORDER("In what order do the numbers go?", ["1", "2", "3"]) is True
+
+
+def test_validate_calc_accepts_valid():
+	variables = {
+		"v": {"min": 1.0, "max": 50.0, "decimal_places": 1},
+		"t": {"min": 1.0, "max": 10.0, "decimal_places": 0},
+	}
+	assert validator.validate_CALC(
+		"A car travels [v] m/s for [t] s.", variables, "v * t", 5.0) is True
+
+
+def test_validate_calc_rejects_missing_placeholder_variable():
+	variables = {"x": {"min": 1.0, "max": 5.0, "decimal_places": 0}}
+	with pytest.raises(ValueError, match="not declared in variables"):
+		validator.validate_CALC("What is [y] plus [x]?", variables, "x", 5.0)
+
+
+def test_validate_calc_rejects_empty_variables():
+	with pytest.raises(ValueError, match="non-empty dict"):
+		validator.validate_CALC("What is [x]?", {}, "x", 5.0)
+
+
+def test_validate_calc_rejects_min_ge_max():
+	variables = {"x": {"min": 5.0, "max": 5.0, "decimal_places": 0}}
+	with pytest.raises(ValueError, match="min"):
+		validator.validate_CALC("What is [x]?", variables, "x", 5.0)
+
+
+def test_validate_calc_rejects_out_of_range_tolerance():
+	variables = {"x": {"min": 1.0, "max": 5.0, "decimal_places": 0}}
+	with pytest.raises(ValueError, match="tolerance_pct"):
+		validator.validate_CALC("What is [x]?", variables, "x", 0.0)
+	with pytest.raises(ValueError, match="tolerance_pct"):
+		validator.validate_CALC("What is [x]?", variables, "x", 101.0)
+
+
+def test_validate_calc_rejects_formula_with_forbidden_keyword():
+	variables = {"x": {"min": 1.0, "max": 5.0, "decimal_places": 0}}
+	with pytest.raises(ValueError, match="forbidden"):
+		validator.validate_CALC("What is [x]?", variables, "x + eval(1)", 5.0)
+	with pytest.raises(ValueError, match="forbidden"):
+		validator.validate_CALC("What is [x]?", variables, "__import__('os')", 5.0)
+
+
+def test_validate_calc_rejects_formula_that_fails_evaluation():
+	# min=0 so substituting min value gives 1/0 -> ZeroDivisionError
+	variables = {"x": {"min": 0.0, "max": 5.0, "decimal_places": 0}}
+	with pytest.raises(ValueError, match="failed to evaluate"):
+		validator.validate_CALC("What is [x]?", variables, "1 / x", 5.0)
+
+
+def test_validate_calc_rejects_negative_decimal_places():
+	variables = {"x": {"min": 1.0, "max": 5.0, "decimal_places": -1}}
+	with pytest.raises(ValueError, match="decimal_places"):
+		validator.validate_CALC("What is [x]?", variables, "x", 5.0)

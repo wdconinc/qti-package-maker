@@ -185,3 +185,20 @@ def ORDER(item_cls):
 		bb_question += f'\t{clean_text_for_bbq(answer_text)}'
 	# Return the formatted question
 	return bb_question + '\n'
+
+#==============================================================
+# Create a Calculated (formula) question.
+def CALC(item_cls):
+	"""Render a CALC item in BBQ text upload format (FIL type).
+
+	Format:
+	  FIL<TAB><question><TAB><varname><TAB><min><TAB><max><TAB><scale><TAB>...<TAB><formula><TAB><tolerance_pct>
+	Variables are listed in sorted order.
+	"""
+	bb_question = 'FIL\t'
+	question_text = clean_text_for_bbq(item_cls.question_text)
+	bb_question += f'<p>{item_cls.item_crc16}</p> {question_text}'
+	for varname, spec in sorted(item_cls.variables.items()):
+		bb_question += f'\t{varname}\t{spec["min"]}\t{spec["max"]}\t{spec["decimal_places"]}'
+	bb_question += f'\t{item_cls.formula}\t{item_cls.tolerance_pct}'
+	return bb_question + '\n'

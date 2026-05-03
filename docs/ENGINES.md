@@ -71,6 +71,7 @@
 
 | Item type   | bb ultra qti v2.1   | bbq text upload   | blackboard qti v2.1   | canvas qti v1.2   | html selftest   | human readable   | text2qti   |
 |-------------|---------------------|-----------------|-----------------------|-------------------|-----------------|------------------|------------|
+| CALC        | X                   | yes               | X                     | yes               | yes            | yes              | no         |
 | FIB         | yes                 | yes               | yes                   | X                 | yes            | yes              | yes        |
 | MA          | yes                 | yes               | yes                   | yes               | yes            | yes              | yes        |
 | MATCH       | yes                 | yes               | yes                   | yes               | yes            | yes              | no         |
