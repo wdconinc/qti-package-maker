@@ -32,6 +32,13 @@ def sample_items():
 		"FIB": ("Complete the sentence: The sky is __.", ["blue"]),
 		"MULTI_FIB": ("Fill in the blanks: A [1] is a [2].", {"1": ["dog"], "2": ["mammal"]}),
 		"ORDER": ("Arrange the planets by size.", ["Mercury", "Mars", "Venus", "Earth"]),
+		"CALC": (
+			"A car travels [v] m/s for [t] s. Find the distance in metres.",
+			{"v": {"min": 1.0, "max": 50.0, "decimal_places": 1},
+				"t": {"min": 1.0, "max": 10.0, "decimal_places": 0}},
+			"v * t",
+			5.0,
+		),
 	}
 
 

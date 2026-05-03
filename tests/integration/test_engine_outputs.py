@@ -67,3 +67,39 @@ def test_text2qti_output(tmp_cwd):
 	with open(outfile, "r", encoding="utf-8") as f:
 		contents = f.read()
 	assert "What is 2 + 2?" in contents
+
+
+def _make_calc_packer():
+	qti_packer = qti_package_maker.package_interface.QTIPackageInterface("calc-out", verbose=False, allow_mixed=True)
+	qti_packer.add_item("CALC", (
+		"A car travels [v] m/s for [t] s. Find the distance.",
+		{"v": {"min": 1.0, "max": 50.0, "decimal_places": 1},
+			"t": {"min": 1.0, "max": 10.0, "decimal_places": 0}},
+		"v * t",
+		5.0,
+	))
+	return qti_packer
+
+
+def test_bbq_calc_output_fil_format(tmp_cwd):
+	"""BBQ writer must produce a FIL line with variable fields and formula."""
+	qti_packer = _make_calc_packer()
+	outfile = qti_packer.save_package("bbq_text_upload")
+	assert outfile
+	with open(outfile, "r", encoding="utf-8") as f:
+		contents = f.read()
+	assert contents.startswith("FIL\t")
+	assert "v * t" in contents
+	assert "5.0" in contents
+
+
+def test_html_selftest_calc_output(tmp_cwd):
+	"""HTML selftest writer must produce a checkAnswer function and variable names."""
+	qti_packer = _make_calc_packer()
+	outfile = qti_packer.save_package("html_selftest")
+	assert outfile
+	with open(outfile, "r", encoding="utf-8") as f:
+		contents = f.read()
+	assert "checkAnswer_" in contents
+	assert "calcFormula_" in contents
+	assert "v * t" in contents

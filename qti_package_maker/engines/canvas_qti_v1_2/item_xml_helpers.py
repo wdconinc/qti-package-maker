@@ -1,4 +1,5 @@
 # Standard Library
+import math as _math
 #import html
 #import random
 
@@ -320,6 +321,77 @@ def create_MULTI_FIB_resprocessing(answer_map: dict):
 				v.text = answer
 		lxml.etree.SubElement(respcondition, "setvar", varname="SCORE", action="Add").text = f"{base_score:.2f}"
 	return resprocessing
+
+#==============================================================
+#==============================================================
+def create_CALC_item_proc_extension(variables: dict, formula: str, tolerance_pct: float,
+		num_var_sets: int = 10) -> lxml.etree.Element:
+	"""
+	Create the <itemproc_extension><calculated> block required by Canvas for
+	calculated questions.
+
+	Canvas requires:
+	  - <answer_tolerance> (percentage type)
+	  - <formulas decimal_places="N"> with a single <formula>
+	  - <vars> with one <var> per variable (name, scale, min, max)
+	  - <var_sets> with pre-computed sample value sets (at least 1)
+
+	Variable sets are generated deterministically by evenly spacing each
+	variable's range into num_var_sets steps so output is stable across runs.
+	"""
+	# Determine the minimum decimal_places across all variables for the formula
+	max_decimal_places = max(spec['decimal_places'] for spec in variables.values())
+
+	itemproc_extension = lxml.etree.Element("itemproc_extension")
+	calculated = lxml.etree.SubElement(itemproc_extension, "calculated")
+
+	# Tolerance
+	answer_tolerance = lxml.etree.SubElement(calculated, "answer_tolerance")
+	answer_tolerance.attrib['type'] = 'percent'
+	answer_tolerance.text = str(tolerance_pct)
+
+	# Formulas
+	formulas_el = lxml.etree.SubElement(calculated, "formulas",
+		decimal_places=str(max_decimal_places))
+	formula_el = lxml.etree.SubElement(formulas_el, "formula")
+	formula_el.text = formula
+
+	# Vars
+	vars_el = lxml.etree.SubElement(calculated, "vars")
+	sorted_vars = sorted(variables.items())
+	for varname, spec in sorted_vars:
+		var_el = lxml.etree.SubElement(vars_el, "var",
+			name=varname, scale=str(spec['decimal_places']))
+		lxml.etree.SubElement(var_el, "min").text = str(spec['min'])
+		lxml.etree.SubElement(var_el, "max").text = str(spec['max'])
+
+	# Var sets - generate deterministically
+	var_sets_el = lxml.etree.SubElement(calculated, "var_sets")
+	for i in range(num_var_sets):
+		# fraction in [0, 1] evenly spaced across i = 0..num_var_sets-1
+		frac = i / max(num_var_sets - 1, 1)
+		var_set_el = lxml.etree.SubElement(var_sets_el, "var_set",
+			ident=f"set_{i+1:03d}")
+		safe_ns = {name: getattr(_math, name) for name in dir(_math) if not name.startswith('_')}
+		for varname, spec in sorted_vars:
+			raw = spec['min'] + frac * (spec['max'] - spec['min'])
+			dp = spec['decimal_places']
+			val = round(raw, dp)
+			safe_ns[varname] = float(val)
+			var_el = lxml.etree.SubElement(var_set_el, "var", name=varname)
+			var_el.text = f"{val:.{dp}f}" if dp > 0 else str(int(val))
+		# Compute the expected answer for this var set
+		try:
+			answer_val = eval(formula, {"__builtins__": {}}, safe_ns)  # noqa: S307
+			answer_val = round(float(answer_val), max_decimal_places)
+		except Exception:
+			answer_val = 0.0
+		lxml.etree.SubElement(var_set_el, "answer").text = (
+			f"{answer_val:.{max_decimal_places}f}" if max_decimal_places > 0 else str(int(answer_val))
+		)
+
+	return itemproc_extension
+
 
 #==============================================================
 #==============================================================

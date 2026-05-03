@@ -1,5 +1,7 @@
 
 # Standard Library
+import ast
+import math
 import re
 import lxml.etree
 
@@ -214,4 +216,97 @@ def validate_ORDER(question_text: str,  ordered_answers_list: list):
 	"""
 	validate_string_text(question_text, 'question_text')
 	validate_list_of_strings(ordered_answers_list, 'ordered_answers_list', 3)
+	return True
+
+#========================================================
+# Allowlist for CALC formula characters:
+# alphanumeric identifiers, common arithmetic operators, whitespace, parentheses,
+# dots (decimals), commas (function args), and the power operator **.
+# Note: ^ is intentionally excluded - Python uses ** for exponentiation; ^ is bitwise XOR.
+_FORMULA_ALLOWLIST_RE = re.compile(r'^[A-Za-z0-9_\s\+\-\*/\.\,\(\)\%]+$')
+
+# Math function names available in the safe formula namespace
+_SAFE_MATH_NAMES = {name for name in dir(math) if not name.startswith('_')}
+
+def validate_CALC(question_text: str, variables: dict, formula: str, tolerance_pct: float):
+	"""
+	Validate a CALC (arithmetic/calculated) question.
+
+	Args:
+		question_text (str): Question text with [varname] placeholders.
+		variables (dict): {varname: {"min": float, "max": float, "decimal_places": int}}
+		formula (str): Python/JS arithmetic expression using bare variable names.
+		tolerance_pct (float): Percentage tolerance (0 < pct <= 100).
+	"""
+	validate_string_text(question_text, 'question_text')
+
+	# variables must be a non-empty dict
+	if not isinstance(variables, dict) or not variables:
+		raise ValueError("'variables' must be a non-empty dict.")
+	for varname, spec in variables.items():
+		if not isinstance(varname, str) or not varname:
+			raise ValueError(f"Variable name must be a non-empty string, got: {varname!r}")
+		if not isinstance(spec, dict):
+			raise ValueError(f"Variable spec for '{varname}' must be a dict.")
+		for key in ('min', 'max', 'decimal_places'):
+			if key not in spec:
+				raise ValueError(f"Variable spec for '{varname}' is missing key '{key}'.")
+		if not isinstance(spec['decimal_places'], int) or spec['decimal_places'] < 0:
+			raise ValueError(f"'decimal_places' for '{varname}' must be a non-negative int.")
+		if spec['min'] >= spec['max']:
+			raise ValueError(f"Variable '{varname}': min ({spec['min']}) must be less than max ({spec['max']}).")
+
+	# Every [varname] in question_text must be in variables
+	placeholders = re.findall(r'\[([^\]]+)\]', question_text)
+	for placeholder in placeholders:
+		if placeholder not in variables:
+			raise ValueError(
+				f"Placeholder '[{placeholder}]' in question_text is not declared in variables."
+			)
+
+	# Every variable name must appear in question_text or formula
+	for varname in variables:
+		in_text = f'[{varname}]' in question_text
+		in_formula = re.search(r'\b' + re.escape(varname) + r'\b', formula) is not None
+		if not in_text and not in_formula:
+			print(f"Warning: variable '{varname}' is declared but not used in question_text or formula.")
+
+	# formula must be non-empty
+	if not isinstance(formula, str) or not formula.strip():
+		raise ValueError("'formula' must be a non-empty string.")
+
+	# Forbid dangerous constructs
+	forbidden = ['import', 'exec', 'eval', '__']
+	for token in forbidden:
+		if token in formula:
+			raise ValueError(f"'formula' contains forbidden token: '{token}'.")
+	if not _FORMULA_ALLOWLIST_RE.match(formula):
+		raise ValueError(
+			f"'formula' contains disallowed characters. Only alphanumeric identifiers, "
+			f"arithmetic operators (+, -, *, /, **, %, ^), parentheses, dots, and commas are allowed."
+		)
+
+	# tolerance_pct range
+	if not isinstance(tolerance_pct, (int, float)) or not (0 < tolerance_pct <= 100):
+		raise ValueError("'tolerance_pct' must be a number in the range (0, 100].")
+
+	# Trial evaluation: substitute min values and evaluate.
+	# eval() is required here because the formula may reference math functions
+	# (e.g. sqrt, sin) which ast.literal_eval cannot handle.  Security is
+	# enforced by: (1) the allowlist regex above, (2) the forbidden-token check,
+	# and (3) passing {"__builtins__": {}} to suppress all built-ins.
+	safe_namespace = {name: getattr(math, name) for name in _SAFE_MATH_NAMES}
+	for varname, spec in variables.items():
+		safe_namespace[varname] = float(spec['min'])
+	try:
+		result = eval(formula, {"__builtins__": {}}, safe_namespace)  # noqa: S307
+	except Exception as exc:
+		raise ValueError(
+			f"'formula' failed to evaluate with min variable values: {exc}"
+		) from exc
+	if not math.isfinite(float(result)):
+		raise ValueError(
+			f"'formula' evaluated to a non-finite value ({result}) with min variable values."
+		)
+
 	return True

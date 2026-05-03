@@ -155,3 +155,13 @@ def MATCH(item_cls):
 	assessment_item_etree.append(response_processing)
 
 	return assessment_item_etree
+
+
+#==============================================================================
+def CALC(item_cls):
+	"""Blackboard Ultra QTI 2.1 calculated question support is not yet implemented.
+
+	TODO: Map CALC to Blackboard Ultra's proprietary calculated-question extension
+	      once a reference export sample is available for analysis.
+	"""
+	return None

@@ -8,6 +8,7 @@ from qti_package_maker.engines.html_selftest import add_NUM
 from qti_package_maker.engines.html_selftest import add_FIB
 from qti_package_maker.engines.html_selftest import add_MULTI_FIB
 from qti_package_maker.engines.html_selftest import add_ORDER
+from qti_package_maker.engines.html_selftest import add_CALC
 from qti_package_maker.engines.html_selftest import html_functions
 
 #==============================================================
@@ -104,5 +105,18 @@ def ORDER(item_cls):
 		item_cls.item_crc16,
 		item_cls.question_text,
 		item_cls.ordered_answers_list,
+	)
+	return _wrap_selftest_html(html_text)
+
+#==============================================================
+def CALC(item_cls):
+	"""Render a CALC item as HTML self-test content."""
+	html_text = add_CALC.generate_html(
+		item_cls.item_number,
+		item_cls.item_crc16,
+		item_cls.question_text,
+		item_cls.variables,
+		item_cls.formula,
+		item_cls.tolerance_pct,
 	)
 	return _wrap_selftest_html(html_text)

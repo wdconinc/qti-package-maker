@@ -181,3 +181,22 @@ def ORDER(item_cls):
 		assessment_text += f"- [{i+1}] [____] (Correct: {answer_text})\n"
 	assessment_text += '\n\n'
 	return assessment_text
+
+#==============================================================
+def CALC(item_cls):
+	"""Render a CALC (arithmetic/formula) item in the human-readable format."""
+	local_question_text = string_functions.make_question_pretty(item_cls.question_text)
+	if not is_valid_content(local_question_text):
+		return None
+	assessment_text = ''
+	assessment_text += local_question_text
+	assessment_text += '\n'
+	var_parts = []
+	for varname, spec in sorted(item_cls.variables.items()):
+		step = 10 ** (-spec['decimal_places']) if spec['decimal_places'] > 0 else 1
+		var_parts.append(f"{varname} in [{spec['min']}, {spec['max']}] step {step}")
+	assessment_text += "  Variables: " + " | ".join(var_parts) + '\n'
+	assessment_text += f"  Formula: {item_cls.formula}\n"
+	assessment_text += f"  Tolerance: {item_cls.tolerance_pct}%\n"
+	assessment_text += '\n\n'
+	return assessment_text
